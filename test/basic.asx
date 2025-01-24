@@ -1,0 +1,2 @@
+int meow = 3;
+char pointer str = "hello world";
