@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <regex.h>
+#include <string.h>
 
 typedef enum {
 	TOKEN_KEYWORD,
@@ -31,19 +32,19 @@ TokenRule tokenRules[] = {
 #define TOKEN_RULE_COUNT (sizeof(tokenRules) / sizeof(TokenRule))
 
 void compileTokenRules() {
-	if (regcomp(&tokenRules[0].regex, "int|char|pointer", REG_EXTENDED)) {
+	if (regcomp(&tokenRules[0].regex, "^(int|char|pointer)", REG_EXTENDED)) {
 		fprintf(stderr, "Failed to compile regex for KEYWORD\n");
 		exit(1);
 	}
-	if (regcomp(&tokenRules[1].regex, "[0-9]+", REG_EXTENDED)) {
+	if (regcomp(&tokenRules[1].regex, "^[0-9]+", REG_EXTENDED)) {
 		fprintf(stderr, "Failed to compile regex for NUMBER\n");
 		exit(1);
 	}
-	if (regcomp(&tokenRules[0].regex, "\".*?\"", REG_EXTENDED)) {
+	if (regcomp(&tokenRules[2].regex, "^\".*?\"", REG_EXTENDED)) {
 		fprintf(stderr, "Failed to compile regex for STRING\n");
 		exit(1);
 	}
-	if (regcomp(&tokenRules[0].regex, "[a-zA-Z]+", REG_EXTENDED)) {
+	if (regcomp(&tokenRules[3].regex, "^[a-zA-Z_][a-zA-Z0-9_]*", REG_EXTENDED)) {
 		fprintf(stderr, "Failed to compile regex for IDENTIFIER\n");
 		exit(1);
 	}
@@ -90,12 +91,23 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
+	compileTokenRules();
+
 	char buffer[256];
 	while (fgets(buffer, sizeof(buffer), file)) {
-		printf("%s", buffer);
+		//printf("%s", buffer);
+		const char *input = buffer;
+		printf("Parsing line: %s", buffer);
+		Token token;
+		while ((token = getNextToken(&input)).type != TOKEN_END) {
+			printf("Token: Type = %d, Value = '%s'\n", token.type, token.value);
+		}
+		printf("\n");
 	}
 
-	
+	for (int i = 0; i < TOKEN_RULE_COUNT; i++) {
+		regfree(&tokenRules[i].regex);
+	}
 
 	fclose(file);
 	return 0;
