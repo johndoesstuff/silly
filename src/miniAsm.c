@@ -79,6 +79,46 @@ Token getNextToken(const char **input) {
 	return token;
 }
 
+Token* getTokensFromFile(FILE *file, size_t *tokenCount) {
+	compileTokenRules();
+
+	size_t capacity = 16;
+	Token *tokens = malloc(capacity * sizeof(Token));
+	if (!tokens) {
+		perror("Failed to allocate memory for tokens");
+		exit(1);
+	}
+	
+	*tokenCount = 0;
+	
+	char buffer[256];
+	while (fgets(buffer, sizeof(buffer), file)) {
+		const char *input = buffer;
+		Token token;
+		while ((token = getNextToken(&input)).type != TOKEN_END) {
+			if (*tokenCount >= capacity) {
+				capacity *= 2;
+				Token *newTokens = realloc(tokens, capacity * sizeof(Token));
+				if (!newTokens) {
+					perror("Failed to reallocate memory for tokens");
+					free(tokens);
+					exit(1);
+				}
+				tokens = newTokens;
+			}
+
+			tokens[*tokenCount] = token;
+			(*tokenCount)++;
+		}
+	}
+
+	for (int i = 0; i < TOKEN_RULE_COUNT; i++) {
+		regfree(&tokenRules[i].regex);
+	}
+
+	return tokens;
+}
+
 int main(int argc, char *argv[]) {
 	if (argc != 2) {
 		fprintf(stderr, "Usage: %s <filename>\n", argv[0]);
@@ -91,22 +131,12 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
-	compileTokenRules();
+	size_t tokenCount = 0;
+	Token *tokens = getTokensFromFile(file, &tokenCount);
 
-	char buffer[256];
-	while (fgets(buffer, sizeof(buffer), file)) {
-		//printf("%s", buffer);
-		const char *input = buffer;
-		printf("Parsing line: %s", buffer);
-		Token token;
-		while ((token = getNextToken(&input)).type != TOKEN_END) {
-			printf("Token: Type = %d, Value = '%s'\n", token.type, token.value);
-		}
-		printf("\n");
-	}
-
-	for (int i = 0; i < TOKEN_RULE_COUNT; i++) {
-		regfree(&tokenRules[i].regex);
+	for (int i = 0; i < tokenCount; i++) {
+		Token token = tokens[i];
+		printf("Token: Type = %d, Value = '%s'\n", token.type, token.value);
 	}
 
 	fclose(file);
