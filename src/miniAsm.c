@@ -12,6 +12,14 @@ typedef enum {
 	TOKEN_END,
 } TokenType;
 
+typedef enum {
+	NODE_PROGRAM,
+	NODE_STATEMENT,
+	NODE_DECLARATION,
+	NODE_DECLARATION_VARIABLE,
+	NODE_EXPRESSION,
+} NodeType;
+
 typedef struct {
 	TokenType type;
 	char value[100];
@@ -21,6 +29,13 @@ typedef struct {
 	regex_t regex;
 	TokenType type;
 } TokenRule;
+
+typedef struct {
+	NodeType type;
+	struct ASTNode **children;
+	size_t children_size;
+	Token *value;
+} ASTNode;
 
 TokenRule tokenRules[] = {
 	{ .type = TOKEN_KEYWORD, .regex = {0} },
